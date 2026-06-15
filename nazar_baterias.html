@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Nazar — Gestión de Baterías</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --azul: #1C4A9F;
+    --azul-dark: #163880;
+    --naranja: #F7941D;
+    --naranja-dark: #d97a10;
+    --bg: #0f1923;
+    --surface: #1a2535;
+    --surface2: #243040;
+    --border: rgba(255,255,255,0.08);
+    --text: #f0f4f8;
+    --text-muted: #8a9bb0;
+    --verde: #22c55e;
+    --rojo: #ef4444;
+    --amarillo: #eab308;
+    --cyan: #06b6d4;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  /* ─── HEADER ─── */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-logo {
+    width: 36px; height: 36px;
+    background: var(--azul);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .header-logo svg { width: 20px; height: 20px; fill: white; }
+  .header-info h1 { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+  .header-info p { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+  /* ─── NAV TABS ─── */
+  .nav {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 12px 8px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+  .nav-btn.active {
+    color: var(--naranja);
+    border-bottom-color: var(--naranja);
+  }
+  .nav-btn svg { width: 20px; height: 20px; }
+
+  /* ─── CONTENT ─── */
+  .page { display: none; padding: 20px; max-width: 520px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-title span.dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--naranja);
+    display: inline-block;
+  }
+
+  /* ─── CAPTURE ZONE ─── */
+  .capture-zone {
+    background: var(--surface2);
+    border: 2px dashed rgba(247,148,29,0.3);
+    border-radius: var(--radius);
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .capture-zone:hover { border-color: rgba(247,148,29,0.6); }
+  .capture-zone svg { width: 40px; height: 40px; color: var(--text-muted); }
+  .capture-zone p { font-size: 13px; color: var(--text-muted); text-align: center; line-height: 1.5; }
+  .capture-zone strong { color: var(--naranja); }
+  #preview-img {
+    width: 100%; height: 200px;
+    object-fit: cover;
+    border-radius: calc(var(--radius) - 4px);
+    display: none;
+  }
+  #file-input { display: none; }
+
+  /* ─── BTN ─── */
+  .btn {
+    width: 100%;
+    padding: 15px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: -0.2px;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary { background: var(--naranja); color: white; }
+  .btn-primary:hover { background: var(--naranja-dark); }
+  .btn-secondary { background: var(--azul); color: white; }
+  .btn-secondary:hover { background: var(--azul-dark); }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* ─── LOADER ─── */
+  .loader {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 24px;
+  }
+  .loader.visible { display: flex; }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--naranja);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader p { font-size: 13px; color: var(--text-muted); text-align: center; }
+
+  /* ─── EXTRACTED DATA FORM ─── */
+  .data-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .field-group { display: flex; flex-direction: column; gap: 5px; }
+  .field-group.full { grid-column: 1 / -1; }
+  .field-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+  }
+  .field-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .field-input:focus { border-color: var(--naranja); }
+  .field-input.ai-filled { border-color: rgba(247,148,29,0.4); background: rgba(247,148,29,0.05); }
+  select.field-input option { background: var(--surface); }
+
+  /* ─── STATUS BADGES ─── */
+  .status-pills {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .status-pill {
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .status-pill .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .status-pill[data-status="almacenamiento"] { background: rgba(234,179,8,0.1); border-color: rgba(234,179,8,0.2); }
+  .status-pill[data-status="almacenamiento"] .dot { background: var(--amarillo); }
+  .status-pill[data-status="almacenamiento"].selected { border-color: var(--amarillo); background: rgba(234,179,8,0.2); }
+  .status-pill[data-status="instalada"] { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); }
+  .status-pill[data-status="instalada"] .dot { background: var(--verde); }
+  .status-pill[data-status="instalada"].selected { border-color: var(--verde); background: rgba(34,197,94,0.2); }
+  .status-pill[data-status="carga"] { background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.2); }
+  .status-pill[data-status="carga"] .dot { background: var(--cyan); }
+  .status-pill[data-status="carga"].selected { border-color: var(--cyan); background: rgba(6,182,212,0.2); }
+  .status-pill[data-status="scrapper"] { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); }
+  .status-pill[data-status="scrapper"] .dot { background: var(--rojo); }
+  .status-pill[data-status="scrapper"].selected { border-color: var(--rojo); background: rgba(239,68,68,0.2); }
+
+  /* ─── CONDITIONAL FIELDS ─── */
+  .conditional { display: none; animation: slideIn 0.2s ease; }
+  .conditional.visible { display: block; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ─── ALERT / TOAST ─── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 12px 20px;
+    border-radius: 50px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 999;
+    white-space: nowrap;
+    max-width: 90vw;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.4); color: var(--verde); }
+  .toast.error { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.4); color: var(--rojo); }
+  .toast.warning { background: rgba(234,179,8,0.15); border-color: rgba(234,179,8,0.4); color: var(--amarillo); }
+
+  /* ─── CONFIG SECTION ─── */
+  .config-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .config-row:last-child { border-bottom: none; }
+  .config-label { font-size: 13px; color: var(--text); }
+  .config-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .config-input-sm {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+    width: 140px;
+    text-align: right;
+  }
+  .config-input-sm:focus { border-color: var(--naranja); }
+
+  /* ─── AI BADGE ─── */
+  .ai-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--naranja);
+    background: rgba(247,148,29,0.1);
+    border: 1px solid rgba(247,148,29,0.2);
+    border-radius: 4px;
+    padding: 3px 7px;
+    margin-left: 6px;
+  }
+  .ai-badge svg { width: 10px; height: 10px; }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .mt8 { margin-top: 8px; }
+  .mt12 { margin-top: 12px; }
+  .mt16 { margin-top: 16px; }
+
+  /* ─── RACK VISUAL ─── */
+  .rack-display {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .rack-slot {
+    width: 32px; height: 22px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+    color: var(--text-muted);
+    transition: background 0.2s;
+  }
+  .rack-slot.occupied { background: var(--azul); border-color: var(--azul); color: white; }
+  .rack-info { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+  /* ─── STEPS INDICATOR ─── */
+  .steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 20px;
+  }
+  .step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+  }
+  .step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+  }
+  .step-circle {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    position: relative;
+    z-index: 1;
+  }
+  .step.active .step-circle { background: var(--naranja); border-color: var(--naranja); color: white; }
+  .step.done .step-circle { background: var(--verde); border-color: var(--verde); color: white; }
+  .step-label { font-size: 10px; color: var(--text-muted); }
+  .step.active .step-label { color: var(--naranja); }
+
+  /* Scroll helper */
+  .pb80 { padding-bottom: 80px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM13 18h-2v-2h2v2zm0-4h-2V9h2v5z"/>
+    </svg>
+  </div>
+  <div class="header-info">
+    <h1>Gestión de Baterías</h1>
+    <p>Nazar — Sistema Caren</p>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="showPage('registro')" id="nav-registro">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 11h8v2H8zm0 4h8v2H8z"/></svg>
+    Registrar
+  </button>
+  <button class="nav-btn" onclick="showPage('estado')" id="nav-estado">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+    Estado
+  </button>
+  <button class="nav-btn" onclick="showPage('racks')" id="nav-racks">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/></svg>
+    Racks
+  </button>
+  <button class="nav-btn" onclick="showPage('config')" id="nav-config">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+    Config
+  </button>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ════════════════════════════════════
+     PAGE: REGISTRO DE BATERÍA (Módulo 1)
+     ════════════════════════════════════ -->
+<div class="page active pb80" id="page-registro">
+
+  <!-- STEPS -->
+  <div class="steps" style="margin-top:20px">
+    <div class="step active" id="step1">
+      <div class="step-circle">1</div>
+      <div class="step-label">Foto</div>
+    </div>
+    <div class="step" id="step2">
+      <div class="step-circle">2</div>
+      <div class="step-label">Verificar</div>
+    </div>
+    <div class="step" id="step3">
+      <div class="step-circle">3</div>
+      <div class="step-label">Confirmar</div>
+    </div>
+  </div>
+
+  <!-- STEP 1: CAPTURA -->
+  <div id="section-capture">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Fotografiar etiqueta</div>
+      <div class="capture-zone" onclick="document.getElementById('file-input').click()">
+        <img id="preview-img" alt="Vista previa"/>
+        <svg id="camera-icon" viewBox="0 0 24 24" fill="currentColor" style="color:var(--text-muted)">
+          <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4zM9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>
+        </svg>
+        <p id="capture-hint">Toca para <strong>fotografiar</strong> o <strong>subir imagen</strong> de la etiqueta</p>
+      </div>
+      <input type="file" id="file-input" accept="image/*" capture="environment">
+    </div>
+
+    <button class="btn btn-primary mt12" id="btn-analyze" onclick="analyzeImage()" disabled>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.5 6.5c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zM20 8V6c-2.67 0-4.47 1.3-5.5 2.67-.53-1.57-1.93-2.67-3.5-2.67-2.21 0-4 1.79-4 4 0 1.3.63 2.43 1.59 3.14L5 16h2.5l.97-.97C9.37 15.66 10.18 16 11 16c1.38 0 2.55-.8 3.13-2H14c.94 1.21 2.55 2 4 2h2v-2h-2c-.56 0-1.08-.15-1.54-.42C17.5 12.46 18 11.28 18 10c0-.68-.15-1.32-.42-1.9.76-.39 1.55-.6 2.42-.1z"/></svg>
+      Analizar con IA
+    </button>
+  </div>
+
+  <!-- LOADER IA -->
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <p>Analizando etiqueta con IA...<br>Esto toma unos segundos</p>
+  </div>
+
+  <!-- STEP 2: DATOS EXTRAÍDOS -->
+  <div id="section-data" style="display:none">
+    <div class="card">
+      <div class="card-title">
+        <span class="dot"></span>Datos extraídos
+        <span class="ai-badge">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-4H7l5-8v4h4l-5 8z"/></svg>
+          IA
+        </span>
+      </div>
+      <div class="data-grid">
+        <div class="field-group full">
+          <div class="field-label">N° Serie *</div>
+          <input type="text" class="field-input" id="f-serie" placeholder="Número de serie"/>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Marca</div>
+          <input type="text" class="field-input" id="f-marca" placeholder="—"/>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Modelo</div>
+          <input type="text" class="field-input" id="f-modelo" placeholder="—"/>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Voltaje</div>
+          <input type="text" class="field-input" id="f-voltaje" placeholder="—"/>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Amperaje (Ah)</div>
+          <input type="text" class="field-input" id="f-amperaje" placeholder="—"/>
+        </div>
+        <div class="field-group full">
+          <div class="field-label">Fecha fabricación</div>
+          <input type="text" class="field-input" id="f-fecha-fab" placeholder="—"/>
+        </div>
+        <div class="field-group full">
+          <div class="field-label">Código producto</div>
+          <input type="text" class="field-input" id="f-codigo" placeholder="—"/>
+        </div>
+        <div class="field-group full">
+          <div class="field-label">Observaciones IA</div>
+          <input type="text" class="field-input" id="f-obs" placeholder="—"/>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:12px">
+        ✏️ Revisa y corrige si es necesario. Los campos en naranja fueron detectados automáticamente.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Estado inicial</div>
+      <div class="status-pills">
+        <div class="status-pill selected" data-status="almacenamiento" onclick="selectStatus('almacenamiento')">
+          <span class="dot"></span> Almacenamiento
+        </div>
+        <div class="status-pill" data-status="instalada" onclick="selectStatus('instalada')">
+          <span class="dot"></span> En camión
+        </div>
+        <div class="status-pill" data-status="carga" onclick="selectStatus('carga')">
+          <span class="dot"></span> En carga
+        </div>
+        <div class="status-pill" data-status="scrapper" onclick="selectStatus('scrapper')">
+          <span class="dot"></span> Scrapper
+        </div>
+      </div>
+
+      <div class="conditional" id="cond-instalada">
+        <div class="field-group">
+          <div class="field-label">N° Patente / ID Camión</div>
+          <input type="text" class="field-input" id="f-camion" placeholder="ej. ABCD12 / Camión 7"/>
+        </div>
+      </div>
+
+      <div class="conditional" id="cond-carga">
+        <div class="field-group">
+          <div class="field-label">Rack</div>
+          <select class="field-input" id="f-rack">
+            <option value="">— Seleccionar —</option>
+            <option value="rack1">Rack 1</option>
+            <option value="rack2">Rack 2</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mt12">
+        <div class="field-group">
+          <div class="field-label">Técnico responsable</div>
+          <select class="field-input" id="f-tecnico">
+            <option value="">— Seleccionar —</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-outline" onclick="resetToCapture()" style="flex:0.4">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        Volver
+      </button>
+      <button class="btn btn-secondary" onclick="submitBattery()" style="flex:1">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        Registrar batería
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE: CAMBIO DE ESTADO (Módulo 2)
+     ════════════════════════════════════ -->
+<div class="page pb80" id="page-estado">
+
+  <div class="card" style="margin-top:20px">
+    <div class="card-title"><span class="dot"></span>Cambio de estado</div>
+
+    <div class="field-group">
+      <div class="field-label">N° Serie de la batería *</div>
+      <input type="text" class="field-input" id="estado-serie" placeholder="Buscar o ingresar número de serie"
+             oninput="searchBattery(this.value)"/>
+    </div>
+
+    <div id="battery-info" style="display:none;margin-top:10px">
+      <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;font-size:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:var(--text-muted)">Estado actual</span>
+          <span id="battery-current-status" style="font-weight:600"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:4px">
+          <span style="color:var(--text-muted)">Marca/Modelo</span>
+          <span id="battery-model" style="font-weight:500"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Nuevo estado</div>
+    <div class="status-pills">
+      <div class="status-pill" data-status="almacenamiento" onclick="selectEstado('almacenamiento')">
+        <span class="dot"></span> Almacenamiento
+      </div>
+      <div class="status-pill" data-status="instalada" onclick="selectEstado('instalada')">
+        <span class="dot"></span> En camión
+      </div>
+      <div class="status-pill" data-status="carga" onclick="selectEstado('carga')">
+        <span class="dot"></span> En carga
+      </div>
+      <div class="status-pill" data-status="scrapper" onclick="selectEstado('scrapper')">
+        <span class="dot"></span> Scrapper
+      </div>
+    </div>
+
+    <div class="conditional" id="e-cond-instalada">
+      <div class="field-group">
+        <div class="field-label">N° Patente / ID Camión *</div>
+        <select class="field-input" id="e-camion">
+          <option value="">— Seleccionar camión —</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="conditional" id="e-cond-carga">
+      <div class="field-group">
+        <div class="field-label">Rack *</div>
+        <select class="field-input" id="e-rack">
+          <option value="">— Seleccionar —</option>
+          <option value="rack1">Rack 1</option>
+          <option value="rack2">Rack 2</option>
+        </select>
+      </div>
+      <div id="rack-availability" style="margin-top:8px"></div>
+    </div>
+
+    <div class="conditional" id="e-cond-scrapper">
+      <div class="field-group">
+        <div class="field-label">Motivo *</div>
+        <select class="field-input" id="e-motivo">
+          <option value="">— Seleccionar motivo —</option>
+          <option value="fin_vida">Fin de vida útil</option>
+          <option value="daño_fisico">Daño físico</option>
+          <option value="falla_electrica">Falla eléctrica</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div class="field-group mt8">
+        <div class="field-label">Autorizado por *</div>
+        <input type="text" class="field-input" id="e-autoriza" placeholder="Nombre y cargo"/>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="field-group">
+      <div class="field-label">Técnico responsable *</div>
+      <select class="field-input" id="e-tecnico">
+        <option value="">— Seleccionar —</option>
+      </select>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="submitEstado()">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+    Registrar cambio de estado
+  </button>
+
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE: RACKS
+     ════════════════════════════════════ -->
+<div class="page pb80" id="page-racks">
+  <div class="card" style="margin-top:20px">
+    <div class="card-title"><span class="dot"></span>Rack 1</div>
+    <div class="rack-display" id="rack1-display"></div>
+    <div class="rack-info" id="rack1-info"></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Rack 2</div>
+    <div class="rack-display" id="rack2-display"></div>
+    <div class="rack-info" id="rack2-info"></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Baterías en carga</div>
+    <div id="charging-list" style="font-size:13px;color:var(--text-muted)">Cargando...</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE: CONFIG
+     ════════════════════════════════════ -->
+<div class="page pb80" id="page-config">
+  <div class="card" style="margin-top:20px">
+    <div class="card-title"><span class="dot"></span>Configuración del sistema</div>
+
+    <div class="config-row">
+      <div>
+        <div class="config-label">API Key Gemini</div>
+        <div class="config-sub">Google AI Studio (aistudio.google.com)</div>
+      </div>
+      <input type="password" class="config-input-sm" id="cfg-api-key" placeholder="AQ.Ab8RN6…" onchange="saveConfig()"/>
+    </div>
+
+    <div class="config-row">
+      <div>
+        <div class="config-label">URL Apps Script</div>
+        <div class="config-sub">Endpoint Google Sheets</div>
+      </div>
+      <input type="text" class="config-input-sm" id="cfg-sheets-url" placeholder="https://…" onchange="saveConfig()"/>
+    </div>
+
+    <div class="config-row">
+      <div>
+        <div class="config-label">Slots por rack</div>
+        <div class="config-sub">Capacidad de cada rack cargador</div>
+      </div>
+      <input type="number" class="config-input-sm" id="cfg-rack-capacity" value="6" min="1" max="20" onchange="saveConfig()"/>
+    </div>
+
+    <div class="config-row">
+      <div>
+        <div class="config-label">Técnicos (uno por línea)</div>
+      </div>
+    </div>
+    <textarea class="field-input" id="cfg-tecnicos" rows="4"
+      placeholder="Wagner Bustamante&#10;Carlos Molina&#10;..." style="margin-bottom:8px"
+      onchange="saveConfig();loadTechnicians()"></textarea>
+
+    <div class="config-row">
+      <div>
+        <div class="config-label">Camiones Nazar (uno por línea)</div>
+      </div>
+    </div>
+    <textarea class="field-input" id="cfg-camiones" rows="4"
+      placeholder="ABCD12 — Camión 1&#10;EFGH34 — Camión 2&#10;..." style="margin-bottom:8px"
+      onchange="saveConfig();loadTrucks()"></textarea>
+
+  </div>
+
+  <button class="btn btn-secondary" onclick="saveConfig();showToast('✅ Configuración guardada','success')">
+    Guardar configuración
+  </button>
+
+  <div style="margin-top:16px;text-align:center;font-size:11px;color:var(--text-muted)">
+    Sistema Caren × Nazar · v1.0<br>
+    Desarrollado con Gemini 1.5 Flash + Claude
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+//  ESTADO GLOBAL
+// ═══════════════════════════════════════
+let currentImage = null;
+let selectedStatus = 'almacenamiento';
+let selectedEstadoNew = null;
+let config = {};
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  loadConfig();
+  loadTechnicians();
+  loadTrucks();
+  renderRacks();
+  setupFileInput();
+});
+
+function loadConfig() {
+  try {
+    const saved = localStorage.getItem('nazar_config');
+    if (saved) config = JSON.parse(saved);
+    if (config.apiKey) document.getElementById('cfg-api-key').value = config.apiKey;
+    if (config.sheetsUrl) document.getElementById('cfg-sheets-url').value = config.sheetsUrl;
+    if (config.rackCapacity) document.getElementById('cfg-rack-capacity').value = config.rackCapacity;
+    if (config.tecnicos) document.getElementById('cfg-tecnicos').value = config.tecnicos;
+    if (config.camiones) document.getElementById('cfg-camiones').value = config.camiones;
+  } catch(e) {}
+}
+
+function saveConfig() {
+  config.apiKey = document.getElementById('cfg-api-key').value.trim();
+  config.sheetsUrl = document.getElementById('cfg-sheets-url').value.trim();
+  config.rackCapacity = parseInt(document.getElementById('cfg-rack-capacity').value) || 6;
+  config.tecnicos = document.getElementById('cfg-tecnicos').value.trim();
+  config.camiones = document.getElementById('cfg-camiones').value.trim();
+  localStorage.setItem('nazar_config', JSON.stringify(config));
+}
+
+function loadTechnicians() {
+  const raw = document.getElementById('cfg-tecnicos').value || config.tecnicos || '';
+  const techs = raw.split('\n').map(t => t.trim()).filter(Boolean);
+  ['f-tecnico','e-tecnico'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">— Seleccionar —</option>';
+    techs.forEach(t => {
+      const o = document.createElement('option');
+      o.value = t; o.textContent = t;
+      sel.appendChild(o);
+    });
+    if (prev) sel.value = prev;
+  });
+}
+
+function loadTrucks() {
+  const raw = document.getElementById('cfg-camiones').value || config.camiones || '';
+  const trucks = raw.split('\n').map(t => t.trim()).filter(Boolean);
+  const sel = document.getElementById('e-camion');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">— Seleccionar camión —</option>';
+  trucks.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t; o.textContent = t;
+    sel.appendChild(o);
+  });
+  if (prev) sel.value = prev;
+}
+
+// ═══════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'racks') renderRacks();
+}
+
+// ═══════════════════════════════════════
+//  FILE INPUT & PREVIEW
+// ═══════════════════════════════════════
+function setupFileInput() {
+  const input = document.getElementById('file-input');
+  input.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      currentImage = ev.target.result;
+      const img = document.getElementById('preview-img');
+      img.src = currentImage;
+      img.style.display = 'block';
+      document.getElementById('camera-icon').style.display = 'none';
+      document.getElementById('capture-hint').style.display = 'none';
+      document.getElementById('btn-analyze').disabled = false;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ═══════════════════════════════════════
+//  STEP INDICATOR
+// ═══════════════════════════════════════
+function setStep(n) {
+  for (let i = 1; i <= 3; i++) {
+    const s = document.getElementById('step' + i);
+    s.classList.remove('active','done');
+    if (i < n) s.classList.add('done');
+    else if (i === n) s.classList.add('active');
+  }
+}
+
+// ═══════════════════════════════════════
+//  IA ANALYSIS (Módulo 1) — Gemini Vision
+// ═══════════════════════════════════════
+async function analyzeImage() {
+  const apiKey = config.apiKey;
+  if (!apiKey) {
+    showToast('⚠️ Configura tu API Key de Gemini primero', 'warning');
+    showPage('config');
+    return;
+  }
+  if (!currentImage) return;
+
+  document.getElementById('section-capture').style.display = 'none';
+  document.getElementById('loader').classList.add('visible');
+  setStep(2);
+
+  const base64 = currentImage.split(',')[1];
+  const mediaType = currentImage.split(';')[0].split(':')[1];
+
+  const prompt = `Analiza esta imagen de una etiqueta de batería industrial. Extrae todos los datos visibles y responde ÚNICAMENTE con un JSON con los campos: numero_serie, marca, modelo, voltaje, amperaje_ah, fecha_fabricacion, codigo_producto, observaciones. Si un campo no es legible, pon null. No incluyas texto fuera del JSON.`;
+
+  try {
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: mediaType, data: base64 } },
+              { text: prompt }
+            ]
+          }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 1000 }
+        })
+      }
+    );
+
+    const data = await resp.json();
+    let raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    raw = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(raw);
+    fillForm(parsed);
+  } catch(err) {
+    showToast('❌ Error al analizar imagen: ' + err.message, 'error');
+    resetToCapture();
+    return;
+  }
+
+  document.getElementById('loader').classList.remove('visible');
+  document.getElementById('section-data').style.display = 'block';
+  setStep(2);
+}
+
+function fillForm(data) {
+  const fields = {
+    'f-serie': data.numero_serie,
+    'f-marca': data.marca,
+    'f-modelo': data.modelo,
+    'f-voltaje': data.voltaje,
+    'f-amperaje': data.amperaje_ah,
+    'f-fecha-fab': data.fecha_fabricacion,
+    'f-codigo': data.codigo_producto,
+    'f-obs': data.observaciones
+  };
+  Object.entries(fields).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (val !== null && val !== undefined) {
+      el.value = val;
+      el.classList.add('ai-filled');
+    } else {
+      el.value = '';
+      el.classList.remove('ai-filled');
+    }
+  });
+}
+
+function resetToCapture() {
+  currentImage = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('preview-img').style.display = 'none';
+  document.getElementById('camera-icon').style.display = '';
+  document.getElementById('capture-hint').style.display = '';
+  document.getElementById('btn-analyze').disabled = true;
+  document.getElementById('section-capture').style.display = 'block';
+  document.getElementById('section-data').style.display = 'none';
+  document.getElementById('loader').classList.remove('visible');
+  setStep(1);
+}
+
+// ═══════════════════════════════════════
+//  STATUS SELECTION
+// ═══════════════════════════════════════
+function selectStatus(status) {
+  selectedStatus = status;
+  document.querySelectorAll('#section-data .status-pill').forEach(p => {
+    p.classList.toggle('selected', p.dataset.status === status);
+  });
+  ['cond-instalada','cond-carga','cond-scrapper'].forEach(id => {
+    document.getElementById(id).classList.remove('visible');
+  });
+  if (status === 'instalada') document.getElementById('cond-instalada').classList.add('visible');
+  if (status === 'carga') document.getElementById('cond-carga').classList.add('visible');
+  if (status === 'scrapper') document.getElementById('cond-scrapper').classList.add('visible');
+}
+
+function selectEstado(status) {
+  selectedEstadoNew = status;
+  document.querySelectorAll('#page-estado .status-pill').forEach(p => {
+    p.classList.toggle('selected', p.dataset.status === status);
+  });
+  ['e-cond-instalada','e-cond-carga','e-cond-scrapper'].forEach(id => {
+    document.getElementById(id).classList.remove('visible');
+  });
+  if (status === 'instalada') document.getElementById('e-cond-instalada').classList.add('visible');
+  if (status === 'carga') {
+    document.getElementById('e-cond-carga').classList.add('visible');
+    checkRackAvailability();
+  }
+  if (status === 'scrapper') document.getElementById('e-cond-scrapper').classList.add('visible');
+}
+
+// ═══════════════════════════════════════
+//  SUBMIT BATERÍA (nuevo registro)
+// ═══════════════════════════════════════
+async function submitBattery() {
+  const serie = document.getElementById('f-serie').value.trim();
+  if (!serie) { showToast('⚠️ Ingresa el número de serie', 'warning'); return; }
+
+  const tecnico = document.getElementById('f-tecnico').value;
+  if (!tecnico) { showToast('⚠️ Selecciona el técnico responsable', 'warning'); return; }
+
+  setStep(3);
+
+  const payload = {
+    accion: 'registro_bateria',
+    numero_serie: serie,
+    marca: document.getElementById('f-marca').value,
+    modelo: document.getElementById('f-modelo').value,
+    voltaje: document.getElementById('f-voltaje').value,
+    amperaje_ah: document.getElementById('f-amperaje').value,
+    fecha_fabricacion: document.getElementById('f-fecha-fab').value,
+    codigo_producto: document.getElementById('f-codigo').value,
+    observaciones: document.getElementById('f-obs').value,
+    estado_inicial: selectedStatus,
+    camion: document.getElementById('f-camion')?.value || '',
+    rack: document.getElementById('f-rack')?.value || '',
+    tecnico: tecnico,
+    timestamp: new Date().toISOString()
+  };
+
+  await sendToSheets(payload);
+}
+
+// ═══════════════════════════════════════
+//  SUBMIT CAMBIO DE ESTADO
+// ═══════════════════════════════════════
+async function submitEstado() {
+  const serie = document.getElementById('estado-serie').value.trim();
+  if (!serie) { showToast('⚠️ Ingresa el número de serie', 'warning'); return; }
+  if (!selectedEstadoNew) { showToast('⚠️ Selecciona el nuevo estado', 'warning'); return; }
+  const tecnico = document.getElementById('e-tecnico').value;
+  if (!tecnico) { showToast('⚠️ Selecciona el técnico responsable', 'warning'); return; }
+
+  if (selectedEstadoNew === 'carga') {
+    const rack = document.getElementById('e-rack').value;
+    if (!rack) { showToast('⚠️ Selecciona un rack', 'warning'); return; }
+    const cap = config.rackCapacity || 6;
+    const occ = getRackOccupancy(rack);
+    if (occ >= cap) { showToast('❌ Rack lleno — capacidad máxima alcanzada', 'error'); return; }
+  }
+
+  if (selectedEstadoNew === 'scrapper') {
+    const motivo = document.getElementById('e-motivo').value;
+    const autoriza = document.getElementById('e-autoriza').value.trim();
+    if (!motivo || !autoriza) { showToast('⚠️ Completa motivo y autorizante', 'warning'); return; }
+  }
+
+  const payload = {
+    accion: 'cambio_estado',
+    numero_serie: serie,
+    estado_nuevo: selectedEstadoNew,
+    camion: document.getElementById('e-camion')?.value || '',
+    rack: document.getElementById('e-rack')?.value || '',
+    motivo_scrapper: document.getElementById('e-motivo')?.value || '',
+    autoriza: document.getElementById('e-autoriza')?.value || '',
+    tecnico: tecnico,
+    timestamp: new Date().toISOString()
+  };
+
+  await sendToSheets(payload);
+}
+
+// ═══════════════════════════════════════
+//  SHEETS INTEGRATION
+// ═══════════════════════════════════════
+async function sendToSheets(payload) {
+  const url = config.sheetsUrl;
+  if (!url) {
+    showToast('⚠️ Configura la URL de Apps Script', 'warning');
+    showPage('config');
+    return;
+  }
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      mode: 'no-cors'
+    });
+    showToast('✅ Registro enviado a Google Sheets', 'success');
+    setTimeout(() => {
+      resetToCapture();
+      document.getElementById('f-tecnico').value = '';
+    }, 1500);
+  } catch(err) {
+    showToast('❌ Error al enviar: ' + err.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════
+//  RACK LOGIC (simulado — conectar a Sheets en prod)
+// ═══════════════════════════════════════
+function getRackOccupancy(rack) {
+  // En producción, consultar Sheets en tiempo real
+  return 0;
+}
+
+function checkRackAvailability() {
+  const cap = config.rackCapacity || 6;
+  const r1 = getRackOccupancy('rack1');
+  const r2 = getRackOccupancy('rack2');
+  const div = document.getElementById('rack-availability');
+  div.innerHTML = `
+    <div style="font-size:11px;color:var(--text-muted);display:flex;gap:12px">
+      <span>Rack 1: <strong style="color:${r1>=cap?'var(--rojo)':'var(--verde)'}">${r1}/${cap}</strong></span>
+      <span>Rack 2: <strong style="color:${r2>=cap?'var(--rojo)':'var(--verde)'}">${r2}/${cap}</strong></span>
+    </div>`;
+}
+
+function renderRacks() {
+  const cap = config.rackCapacity || 6;
+  ['rack1','rack2'].forEach(rack => {
+    const occ = getRackOccupancy(rack);
+    const display = document.getElementById(rack + '-display');
+    const info = document.getElementById(rack + '-info');
+    if (!display) return;
+    display.innerHTML = '';
+    for (let i = 0; i < cap; i++) {
+      const slot = document.createElement('div');
+      slot.className = 'rack-slot' + (i < occ ? ' occupied' : '');
+      slot.textContent = i < occ ? '●' : String(i+1);
+      display.appendChild(slot);
+    }
+    const pct = Math.round((occ / cap) * 100);
+    info.textContent = `${occ} de ${cap} slots ocupados (${pct}%)`;
+    info.style.color = occ >= cap ? 'var(--rojo)' : 'var(--text-muted)';
+  });
+
+  document.getElementById('charging-list').innerHTML =
+    '<p style="color:var(--text-muted);font-size:13px">Sin baterías en carga actualmente.<br>Los datos se reflejarán desde Google Sheets.</p>';
+}
+
+// ═══════════════════════════════════════
+//  BATTERY SEARCH (autocomplete stub)
+// ═══════════════════════════════════════
+function searchBattery(query) {
+  const info = document.getElementById('battery-info');
+  if (query.length < 3) { info.style.display = 'none'; return; }
+  // Simulado — en producción, consultar Apps Script
+  info.style.display = 'block';
+  document.getElementById('battery-current-status').textContent = 'Almacenamiento 🟡';
+  document.getElementById('battery-current-status').style.color = 'var(--amarillo)';
+  document.getElementById('battery-model').textContent = '— (consultar Sheets)';
+}
+
+// ═══════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════
+let toastTimer = null;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.remove('show'); }, 3500);
+}
+
+// ═══════════════════════════════════════
+//  URL PARAMS (QR deep link support)
+//  Ej: ?serie=ABC123 -> prellenar campo estado
+// ═══════════════════════════════════════
+window.addEventListener('load', () => {
+  const params = new URLSearchParams(window.location.search);
+  const serie = params.get('serie');
+  if (serie) {
+    showPage('estado');
+    document.getElementById('estado-serie').value = serie;
+    searchBattery(serie);
+    showToast('📷 QR leído: ' + serie, 'success');
+  }
+});
+</script>
+</body>
+</html>
