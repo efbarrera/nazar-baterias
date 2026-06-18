@@ -919,7 +919,7 @@ async function analyzeImage() {
   const base64 = currentImage.split(',')[1];
   const mediaType = currentImage.split(';')[0].split(':')[1];
 
-  const prompt = `Analiza esta imagen de una etiqueta de batería industrial. Extrae todos los datos visibles y responde ÚNICAMENTE con un JSON con los campos: numero_serie, marca, modelo, voltaje, amperaje_ah, fecha_fabricacion, codigo_producto, observaciones. Si un campo no es legible, pon null. No incluyas texto fuera del JSON.`;
+  const prompt = `Analiza esta imagen de una batería industrial. El número de serie puede estar grabado o quemado en la carcasa, impreso en una etiqueta, en relieve, o escrito con marcador. Examina TODA la imagen con detalle, incluyendo bordes, costados y cualquier superficie visible. Busca especialmente: secuencias alfanuméricas largas (números de serie), códigos de barras con texto, etiquetas adhesivas, texto en relieve o grabado. Responde ÚNICAMENTE con un JSON sin texto adicional, con estos campos exactos: numero_serie, marca, modelo, voltaje, amperaje_ah, fecha_fabricacion, codigo_producto, observaciones. Si un campo no es legible o no aparece, pon null. En observaciones indica dónde encontraste el número de serie o qué dificultades tuvo para leerlo.`;
 
   try {
     const resp = await fetch(
