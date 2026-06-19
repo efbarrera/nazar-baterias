@@ -934,7 +934,7 @@ async function analyzeImage() {
               { text: prompt }
             ]
           }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 1000 }
+          generationConfig: { temperature: 0.1, maxOutputTokens: 500, responseMimeType: "application/json" }
         })
       }
     );
@@ -944,7 +944,6 @@ async function analyzeImage() {
     // Limpiar markdown y texto extra
     raw = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
     // Extraer solo el bloque JSON si hay texto alrededor
-    console.log('Respuesta Gemini:', raw);
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('No se encontró JSON en la respuesta de la IA');
     const parsed = JSON.parse(jsonMatch[0]);
