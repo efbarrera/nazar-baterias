@@ -919,7 +919,7 @@ async function analyzeImage() {
   const base64 = currentImage.split(',')[1];
   const mediaType = currentImage.split(';')[0].split(':')[1];
 
-  const prompt = `You are a JSON API. Analyze this industrial battery image and return ONLY a valid JSON object with no other text, no markdown, no explanation. The JSON must have exactly these fields: numero_serie, marca, modelo, voltaje, amperaje_ah, fecha_fabricacion, codigo_producto, observaciones. The serial number may be engraved, stamped, printed on a label, or embossed on the casing. If a field is not visible, use null. Return ONLY the JSON object starting with { and ending with }.`;
+  const prompt = `Return ONLY this JSON with no other text: {"numero_serie":"...","marca":"...","modelo":"...","voltaje":"...","amperaje_ah":"...","fecha_fabricacion":null,"codigo_producto":null,"observaciones":null}. Fill in the values from this battery image. Use null for any field not visible. No explanation, no markdown, just the JSON object.`;
 
   try {
     const resp = await fetch(
