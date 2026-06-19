@@ -934,20 +934,37 @@ async function analyzeImage() {
               { text: prompt }
             ]
           }],
-          generationConfig: { temperature: 0, maxOutputTokens: 300 }
+          generationConfig: { temperature: 0, maxOutputTokens: 8192 }
         })
       }
     );
 
     const data = await resp.json();
-    let raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-    // Limpiar markdown y texto extra
+    console.log('Gemini full:', JSON.stringify(data).slice(0, 300));
+    if (data.error) throw new Error('API: ' + data.error.message);
+    
+    let raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    console.log('Gemini text:', raw);
     raw = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
-    // Extraer solo el bloque JSON si hay texto alrededor
-    console.log('Respuesta Gemini:', raw);
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No se encontró JSON en la respuesta de la IA');
-    const parsed = JSON.parse(jsonMatch[0]);
+    
+    // Intentar parsear JSON completo primero
+    let parsed = null;
+    try { parsed = JSON.parse(raw); } catch(e) {}
+    
+    // Si falló (JSON truncado), extraer campo por campo con regex
+    if (!parsed) {
+      const ext = (key) => { const m = raw.match(new RegExp('"' + key + '"\\s*:\\s*"([^"]*)"')); return m ? m[1] : null; };
+      parsed = {
+        numero_serie: ext('numero_serie'),
+        marca: ext('marca'),
+        modelo: ext('modelo'),
+        voltaje: ext('voltaje'),
+        amperaje_ah: ext('amperaje_ah'),
+        fecha_fabricacion: ext('fecha_fabricacion'),
+        codigo_producto: ext('codigo_producto'),
+        observaciones: ext('observaciones')
+      };
+    }
     fillForm(parsed);
   } catch(err) {
     showToast('❌ Error al analizar imagen: ' + err.message, 'error');
